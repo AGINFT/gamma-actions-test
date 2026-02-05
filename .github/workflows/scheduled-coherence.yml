@@ -14,6 +14,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Check coherence metrics
+        id: coherence
         run: |
           echo "🜂 Verificando coherencia φ^7 del sistema 🜂"
           
@@ -29,20 +30,23 @@ jobs:
             
             DISTANCE=$(echo "$PHI_7 - $CURRENT_COHERENCE" | bc -l 2>/dev/null || echo "28.416")
             echo "Distancia a φ^7: $DISTANCE"
+            
+            echo "COHERENCE=$CURRENT_COHERENCE" >> $GITHUB_OUTPUT
+            echo "DISTANCE=$DISTANCE" >> $GITHUB_OUTPUT
           else
-            echo "⚠ MASTER_INDEX.json no encontrado, coherencia indefinida"
-            CURRENT_COHERENCE="0.000"
-            DISTANCE="29.034"
+            echo "⚠ MASTER_INDEX.json no encontrado"
+            echo "COHERENCE=0.000" >> $GITHUB_OUTPUT
+            echo "DISTANCE=29.034" >> $GITHUB_OUTPUT
           fi
-          
-          echo "COHERENCE=$CURRENT_COHERENCE" >> $GITHUB_ENV
-          echo "DISTANCE=$DISTANCE" >> $GITHUB_ENV
       
       - name: Create coherence report
         run: |
           mkdir -p memories/coherence
           
-          cat > memories/coherence/report-$(date +%Y-%m-%d).json <<REPORT
+          COHERENCE="${{ steps.coherence.outputs.COHERENCE }}"
+          DISTANCE="${{ steps.coherence.outputs.DISTANCE }}"
+          
+          cat > memories/coherence/report-$(date +%Y-%m-%d).json <<JSONEOF
 {
   "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "coherence_phi": ${COHERENCE:-0.618},
@@ -50,7 +54,21 @@ jobs:
   "distance": ${DISTANCE:-28.416},
   "status": "OPERATIONAL"
 }
-REPORT
+JSONEOF
           
           echo "✓ Reporte de coherencia creado"
           cat memories/coherence/report-$(date +%Y-%m-%d).json
+      
+      - name: Commit coherence report
+        run: |
+          git config user.name "Gamma Bot"
+          git config user.email "gamma-bot@aginft.local"
+          
+          git add memories/coherence/ || true
+          
+          if git diff --staged --quiet; then
+            echo "No hay cambios en coherence reports"
+          else
+            git commit -m "🜂 Coherence report $(date +%Y-%m-%d) [φ=${COHERENCE:-0.618}]"
+            git push
+          fi
