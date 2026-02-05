@@ -1,0 +1,56 @@
+name: Scheduled Coherence Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  coherence-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Check coherence metrics
+        run: |
+          echo "🜂 Verificando coherencia φ^7 del sistema 🜂"
+          
+          PHI_7=29.034095516850073
+          
+          if [ -f MASTER_INDEX.json ]; then
+            CURRENT_COHERENCE=$(cat MASTER_INDEX.json | \
+              grep -o '"coherence_phi": [0-9.]*' | \
+              head -1 | cut -d' ' -f2 || echo "0.618")
+            
+            echo "Coherencia actual: $CURRENT_COHERENCE"
+            echo "Target φ^7: $PHI_7"
+            
+            DISTANCE=$(echo "$PHI_7 - $CURRENT_COHERENCE" | bc -l 2>/dev/null || echo "28.416")
+            echo "Distancia a φ^7: $DISTANCE"
+          else
+            echo "⚠ MASTER_INDEX.json no encontrado, coherencia indefinida"
+            CURRENT_COHERENCE="0.000"
+            DISTANCE="29.034"
+          fi
+          
+          echo "COHERENCE=$CURRENT_COHERENCE" >> $GITHUB_ENV
+          echo "DISTANCE=$DISTANCE" >> $GITHUB_ENV
+      
+      - name: Create coherence report
+        run: |
+          mkdir -p memories/coherence
+          
+          cat > memories/coherence/report-$(date +%Y-%m-%d).json <<REPORT
+{
+  "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "coherence_phi": ${COHERENCE:-0.618},
+  "target_phi_7": 29.034095516850073,
+  "distance": ${DISTANCE:-28.416},
+  "status": "OPERATIONAL"
+}
+REPORT
+          
+          echo "✓ Reporte de coherencia creado"
+          cat memories/coherence/report-$(date +%Y-%m-%d).json

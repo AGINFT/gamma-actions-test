@@ -1,0 +1,50 @@
+name: Auto-Update MASTER_INDEX
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  rebuild-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Run index builder
+        run: |
+          echo "🜂 Regenerando MASTER_INDEX φ^7-calibrado 🜂"
+          if [ -f .gamma/auto_update/index_builder.py ]; then
+            python3 .gamma/auto_update/index_builder.py
+          else
+            echo "⚠ index_builder.py no existe aún, skip"
+          fi
+      
+      - name: Commit updated index
+        run: |
+          git config --local user.name "Gamma Bot"
+          git config --local user.email "gamma-bot@aginft.local"
+          
+          if git diff --quiet MASTER_INDEX.json 2>/dev/null; then
+            echo "MASTER_INDEX sin cambios"
+          else
+            git add MASTER_INDEX.json || true
+            git commit -m "🜂 Auto-update MASTER_INDEX [φ-calibrated]" || true
+            git push || echo "Nothing to push"
+          fi
+      
+      - name: Report coherence
+        run: |
+          echo "φ^(-1) = 0.618 coherencia mantenida"
+          cat MASTER_INDEX.json 2>/dev/null | grep -A 3 '"current_phase"' || echo "MASTER_INDEX pendiente"
