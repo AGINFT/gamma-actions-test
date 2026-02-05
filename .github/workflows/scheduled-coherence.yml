@@ -19,20 +19,13 @@ jobs:
         id: coherence
         run: |
           echo "🜂 Verificando coherencia φ^7 del sistema 🜂"
-          
           PHI_7=29.034095516850073
-          
           if [ -f MASTER_INDEX.json ]; then
-            CURRENT_COHERENCE=$(cat MASTER_INDEX.json | \
-              grep -o '"coherence_phi": [0-9.]*' | \
-              head -1 | cut -d' ' -f2 || echo "0.618")
-            
+            CURRENT_COHERENCE=$(cat MASTER_INDEX.json | grep -o '"coherence_phi": [0-9.]*' | head -1 | cut -d' ' -f2 || echo "0.618")
             echo "Coherencia actual: $CURRENT_COHERENCE"
             echo "Target φ^7: $PHI_7"
-            
             DISTANCE=$(echo "$PHI_7 - $CURRENT_COHERENCE" | bc -l 2>/dev/null || echo "28.416")
             echo "Distancia a φ^7: $DISTANCE"
-            
             echo "COHERENCE=$CURRENT_COHERENCE" >> $GITHUB_OUTPUT
             echo "DISTANCE=$DISTANCE" >> $GITHUB_OUTPUT
           else
@@ -44,20 +37,17 @@ jobs:
       - name: Create coherence report
         run: |
           mkdir -p memories/coherence
-          
           COHERENCE="${{ steps.coherence.outputs.COHERENCE }}"
           DISTANCE="${{ steps.coherence.outputs.DISTANCE }}"
-          
-          cat > memories/coherence/report-$(date +%Y-%m-%d).json <<JSONEOF
-{
-  "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "coherence_phi": ${COHERENCE:-0.618},
-  "target_phi_7": 29.034095516850073,
-  "distance": ${DISTANCE:-28.416},
-  "status": "OPERATIONAL"
-}
-JSONEOF
-          
+          cat > memories/coherence/report-$(date +%Y-%m-%d).json << REPORTEOF
+          {
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "coherence_phi": ${COHERENCE:-0.618},
+            "target_phi_7": 29.034095516850073,
+            "distance": ${DISTANCE:-28.416},
+            "status": "OPERATIONAL"
+          }
+          REPORTEOF
           echo "✓ Reporte de coherencia creado"
           cat memories/coherence/report-$(date +%Y-%m-%d).json
       
@@ -65,9 +55,7 @@ JSONEOF
         run: |
           git config user.name "Gamma Bot"
           git config user.email "gamma-bot@aginft.local"
-          
           git add memories/coherence/ || true
-          
           if git diff --staged --quiet; then
             echo "No hay cambios en coherence reports"
           else
