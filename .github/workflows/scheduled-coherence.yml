@@ -8,6 +8,8 @@ on:
 jobs:
   coherence-check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout
@@ -69,6 +71,6 @@ JSONEOF
           if git diff --staged --quiet; then
             echo "No hay cambios en coherence reports"
           else
-            git commit -m "🜂 Coherence report $(date +%Y-%m-%d) [φ=${COHERENCE:-0.618}]"
+            git commit -m "🜂 Coherence report $(date +%Y-%m-%d) [φ=${{ steps.coherence.outputs.COHERENCE }}]"
             git push
           fi
