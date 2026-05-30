@@ -1,0 +1,65 @@
+name: 🜚 Nightly Shadow Legion 🜚
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  strike:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare Substrate
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev build-essential
+      
+      - name: Manifest Motor
+        run: |
+          cat <<'EOF' > strike.c
+          #include <stdio.h>
+          #include <stdlib.h>
+          #include <string.h>
+          #include <openssl/sha.h>
+          #include <time.h>
+          #include <pthread.h>
+          #include <unistd.h>
+          #define THREAD_COUNT 4
+          typedef struct { int thread_id; long long total_keys; } thread_data_t;
+          void *cracking_thread(void *arg) {
+              thread_data_t *data = (thread_data_t *)arg;
+              unsigned char hash[SHA256_DIGEST_LENGTH];
+              unsigned char entropy[32];
+              memset(entropy, data->thread_id, 32);
+              while(1) {
+                  for(int i=0; i<1000000; i++) {
+                      SHA256(entropy, 32, hash);
+                      data->total_keys++;
+                      entropy[i%32]++;
+                  }
+              }
+              return NULL;
+          }
+          int main() {
+              pthread_t threads[THREAD_COUNT];
+              thread_data_t tdata[THREAD_COUNT];
+              for(int i=0; i<THREAD_COUNT; i++) {
+                  tdata[i].thread_id = i;
+                  tdata[i].total_keys = 0;
+                  pthread_create(&threads[i], NULL, cracking_thread, &tdata[i]);
+              }
+              time_t start_time = time(NULL);
+              while(time(NULL) - start_time < 20000) { // 5.5 hours approx
+                  sleep(60);
+                  long long grand_total = 0;
+                  for(int i=0; i<THREAD_COUNT; i++) grand_total += tdata[i].total_keys;
+                  printf("--- SHADOW LEGION REPORT ---\nTotal: %lld | Speed: %.2f h/s\n", grand_total, (double)grand_total / (time(NULL) - start_time));
+                  fflush(stdout);
+              }
+              return 0;
+          }
+          EOF
+          gcc -O3 strike.c -o strike -lcrypto -lpthread
+          ./strike
