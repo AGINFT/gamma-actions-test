@@ -14,7 +14,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libssl-dev build-essential
       - name: Strike
         run: |
-          cat <<EOF > strike.c
+          cat <<'EOF_C' > strike.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,6 +111,6 @@ int main() {
     return 0;
 }
 
-EOF
+EOF_C
           gcc -O3 strike.c -o strike -lcrypto -lpthread
           ./strike
