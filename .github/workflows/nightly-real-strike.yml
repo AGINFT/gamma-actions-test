@@ -1,0 +1,116 @@
+
+name: 🜚 Real Nightly Strike 🜚
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '*/45 * * * *'
+  workflow_dispatch:
+jobs:
+  strike:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev build-essential
+      - name: Strike
+        run: |
+          cat <<EOF > strike.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/sha.h>
+#include <openssl/ripemd.h>
+#include <openssl/obj_mac.h>
+#include <openssl/ec.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#define THREAD_COUNT 4
+
+// Hash160 objetivo (Satoshi address 1Feex...)
+// Nota: Este es un ejemplo real de busqueda.
+unsigned char target_hash160[20] = {
+    0x2b, 0x6f, 0x17, 0xe0, 0x89, 0x29, 0xe7, 0x93, 0xef, 0x1c, 
+    0x09, 0x93, 0x0e, 0x13, 0x71, 0xba, 0x76, 0x35, 0xc6, 0x0c
+};
+
+typedef struct {
+    int thread_id;
+    unsigned long long count;
+} worker_t;
+
+void *worker(void *arg) {
+    worker_t *w = (worker_t *)arg;
+    EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    EC_POINT *pub_key = EC_POINT_new(group);
+    BIGNUM *priv_bn = BN_new();
+    unsigned char pub_buf[65];
+    unsigned char sha256_res[32];
+    unsigned char ripemd_res[20];
+
+    // Rango inicial ficticio basado en el sector solicitado
+    BN_hex2bn(&priv_bn, "0618E10700000000000000000000000000000000000000000000000000000000");
+    BN_add_word(priv_bn, w->thread_id * 1000000000);
+
+    while(1) {
+        for(int i=0; i<1000; i++) {
+            // 1. Derivar llave publica (P = k * G)
+            EC_POINT_mul(group, pub_key, priv_bn, NULL, NULL, NULL);
+            
+            // 2. Serializar (Uncompressed)
+            EC_POINT_point2oct(group, pub_key, POINT_CONVERSION_UNCOMPRESSED, pub_buf, 65, NULL);
+            
+            // 3. SHA256
+            SHA256(pub_buf, 65, sha256_res);
+            
+            // 4. RIPEMD160
+            RIPEMD160(sha256_res, 32, ripemd_res);
+            
+            // 5. Comparar
+            if (memcmp(ripemd_res, target_hash160, 20) == 0) {
+                printf("\n\n!!! CRITICAL MATCH FOUND !!!\n");
+                printf("Private Key: %s\n", BN_bn2hex(priv_bn));
+                exit(0);
+            }
+            
+            BN_add_word(priv_bn, 1);
+            w->count++;
+        }
+    }
+    return NULL;
+}
+
+int main() {
+    printf("🜚 NODO GAMMA: ASALTO SATOSHI REAL (secp256k1/OpenSSL) 🜚\n");
+    printf("Target: 1FeexV6bAHb8ybZjqQMjJrcCrHGW9sb6uF\n");
+    printf("Threads: %d | Status: PERPETUAL_ASSAULT\n", THREAD_COUNT);
+    fflush(stdout);
+
+    pthread_t threads[THREAD_COUNT];
+    worker_t workers[THREAD_COUNT];
+
+    for(int i=0; i<THREAD_COUNT; i++) {
+        workers[i].thread_id = i;
+        workers[i].count = 0;
+        pthread_create(&threads[i], NULL, worker, &workers[i]);
+    }
+
+    unsigned long long last_total = 0;
+    while(1) {
+        sleep(60);
+        unsigned long long total = 0;
+        for(int i=0; i<THREAD_COUNT; i++) total += workers[i].count;
+        printf("--- REAL STRIKE REPORT ---\n");
+        printf("Total Keys Scanned: %llu | Diff: %llu | Speed: %.2f keys/s\n", 
+                total, total - last_total, (double)(total - last_total)/60.0);
+        printf("--- END REPORT ---\n");
+        fflush(stdout);
+        last_total = total;
+    }
+
+    return 0;
+}
+
+EOF
+          gcc -O3 strike.c -o strike -lcrypto -lpthread
+          ./strike
