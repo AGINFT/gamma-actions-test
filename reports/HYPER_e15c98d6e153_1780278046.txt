@@ -1,0 +1,11 @@
+--- REPORT NODO HYPER_e15c98d6e153_1780278046 ---
+CPU: Model name:                              Intel(R) Xeon(R) CPU @ 2.00GHz
+GPU: GPU 0: Tesla T4 (UUID: GPU-b1310280-f4f3-79a0-09df-2630dc6e60dc)
+NET:
+Nmap scan report for 172.28.0.1
+Host is up (0.000038s latency).
+Not shown: 98 filtered ports
+--
+Nmap scan report for e15c98d6e153 (172.28.0.12)
+Host is up (0.0000060s latency).
+Not shown: 98 closed ports
