@@ -1,0 +1,10 @@
+--- REPORT HYPER_1b97662ca4f8_1780281940 ---
+CPU: Model name:                              Intel(R) Xeon(R) CPU @ 2.20GHz
+GPU: /bin/sh: 1: nvidia-smi: not found
+NoGPU
+NET:
+Nmap scan report for 172.28.0.1
+Host is up (0.000051s latency).
+--
+Nmap scan report for 1b97662ca4f8 (172.28.0.12)
+Host is up (0.0000040s latency).
