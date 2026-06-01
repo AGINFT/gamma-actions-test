@@ -1,0 +1,6 @@
+--- LOCAL TEST REPORT ---
+CPU: Model name:                      Cortex-A55
+GPU: /bin/sh: 1: nvidia-smi: Permission denied
+NoGPU
+NET:
+route_dst_netlink: if_indextoname(1) failed: 13 (Permission denied)
